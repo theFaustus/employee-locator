@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css"
+          integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" rel="stylesheet">
+    <script crossorigin="anonymous" src="https://kit.fontawesome.com/9dfa6c6e5c.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+            src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0"
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <link media="all" rel="stylesheet" th:href="@{/style.css}" type="text/css">
+    <title>emp-loc | employees</title>
+</head>
+<body style="padding: 15px;">
+<div class="alert alert-info" role="alert">
+    <h2>emp-loc | home</h2>
+</div>
+<div>
+
+    <div class="card" style="margin-bottom: 15px;">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <button aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"
+                        class="navbar-toggler" data-bs-target="#navbarSupportedContent"
+                        data-bs-toggle="collapse" type="button">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/}">[employees]</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
+                               id="navbarDropdown" role="button">
+                                Options
+                            </a>
+                            <ul aria-labelledby="navbarDropdown" class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">Create</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="#">Something else here</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a aria-disabled="true" class="nav-link disabled" href="#" tabindex="-1">Disabled</a>
+                        </li>
+                    </ul>
+                    <form class="d-flex">
+                        <input aria-label="Search" class="form-control me-2" placeholder="Search" type="search">
+                        <button class="btn btn-outline-success" type="submit">Search</button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div th:if="${employees.isEmpty()}">
+        <div style="display: flex; align-content: center; justify-content: center;">
+            <div class="alert alert-info" role="alert"
+                 style="margin-left: 20px; margin-right: 20px; margin-top: 20px;">
+                <h3>No employees registered.</h3>
+            </div>
+        </div>
+    </div>
+    <div class="row row-cols-1 row-cols-md-3 g-4" th:if="${!employees.isEmpty()}">
+        <div class="col" th:each="employee : ${employees}">
+            <div class="card">
+                <blockquote class="blockquote mb-0 card-body">
+                    <h5 class="card-title"><span th:text="${employee.username} + ' '"></span><span
+                            class="badge bg-warning text-dark" th:text="${employee.jobPosition}">Warning</span></h5>
+                    <p class="card-text" th:text="${employee.firstName + ' ' + employee.lastName}"></p>
+                    <footer class="blockquote-footer">
+                        <small class="text-muted" th:text="${employee.email}"></small>
+                    </footer>
+                    <p class="card-text" th:text="${employee.address.street + ', ' + employee.address.city + ', ' + employee.address.country}"></p>
+                    <button class="btn btn-success" type="button">On Map</button>
+                </blockquote>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
