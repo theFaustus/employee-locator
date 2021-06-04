@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -35,6 +36,8 @@ public class Employee extends AbstractEntity {
     @Enumerated(EnumType.STRING)
     private JobPosition jobPosition;
 
+    private boolean geoProcessed = false;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -42,6 +45,10 @@ public class Employee extends AbstractEntity {
 
         Employee that = (Employee) o;
         return this.id != null && that.id.equals(this.id);
+    }
+
+    public String getFullName() {
+        return firstName + ", " + lastName;
     }
 
     @Override

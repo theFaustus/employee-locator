@@ -33,3 +33,4 @@ build/
 .vscode/
 /.mvn/wrapper/maven-wrapper.properties
 /.mvn/wrapper/MavenWrapperDownloader.java
+/src/main/resources/application-dev.properties

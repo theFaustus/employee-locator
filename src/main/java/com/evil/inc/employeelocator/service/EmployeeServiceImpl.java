@@ -12,6 +12,7 @@ import java.util.List;
 @RequiredArgsConstructor
 class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
+    private final GeoLocationService geoLocationService;
 
     @Transactional
     public void create(Employee employee) {
@@ -19,7 +20,18 @@ class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional
     public List<Employee> getAll() {
-        return employeeRepository.findAll();
+        final List<Employee> employees = employeeRepository.findAll();
+        employees.forEach(this::computeAddress);
+        return employees;
+    }
+
+    private void computeAddress(Employee employee) {
+        if (employee.getAddress() != null && employee.getGeoLocation() == null && !employee.isGeoProcessed()) {
+            geoLocationService.computeGeoLocation(employee.getAddress().toString())
+                    .ifPresent(employee::setGeoLocation);
+            employee.setGeoProcessed(true);
+        }
     }
 }
