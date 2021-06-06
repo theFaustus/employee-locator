@@ -29,7 +29,172 @@
             });
         })
 
-        function showMapModal(element) {
+        function submitForm(element) {
+            $('#createEmployeeForm').submit();
+        }
+
+        function populateAddressFields(element) {
+            let address = $(element).parent().parent().find('.formattedAddress').text();
+
+            if (address) {
+                var newAddressLines = address.split(', ');
+                if (newAddressLines.length === 1) {
+                    $('#employeeAddressCountry').val(newAddressLines[0]);
+                } else if (newAddressLines.length === 2) {
+                    $('#employeeAddressCity').val(newAddressLines[0]);
+                    $('#employeeAddressCountry').val(newAddressLines[1]);
+                } else {
+                    $('#employeeAddressStreet').val(newAddressLines[0]);
+                    $('#employeeAddressCity').val(newAddressLines[1]);
+                    $('#employeeAddressCountry').val(newAddressLines[2]);
+                }
+            }
+        }
+
+        function initCreateEmployeeMap(element) {
+            $('#createEmployeeDialog').modal('show');
+
+            var map = new google.maps.Map(document.getElementById('create-employee-map'), {
+                zoom: 2,
+                center: {lat: 50.5039, lng: 4.4699}
+            });
+
+
+            var pacContainerInitialized = false;
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.className = "controls";
+            input.id = "pac-input";
+            input.style = "margin-top: 20px;";
+            input.placeholder = "Search";
+            var modal = document.getElementById("createEmployeeDialog");
+            modal.appendChild(input);
+
+            $("#pac-input").keypress(function () {
+                if (!pacContainerInitialized) {
+                    $(".pac-container").css("z-index", "9999");
+                    pacContainerInitialized = true;
+                }
+            });
+
+            const searchBox = new google.maps.places.SearchBox(input);
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+            map.addListener("bounds_changed", () => {
+                searchBox.setBounds(map.getBounds());
+            });
+            let markers = [];
+
+            searchBox.addListener("places_changed", () => {
+                const places = searchBox.getPlaces();
+                if (places.length == 0) {
+                    return;
+                }
+
+                markers.forEach((marker) => {
+                    marker.setMap(null);
+                });
+                markers = [];
+
+                const bounds = new google.maps.LatLngBounds();
+                places.forEach((place) => {
+                    if (!place.geometry || !place.geometry.location) {
+                        console.log("Returned place contains no geometry");
+                        return;
+                    }
+
+                    const marker = new google.maps.Marker({
+                        map,
+                        position: place.geometry.location,
+                        icon: getDefaultSvgMarker('black', 'white'),
+                        title: place.name
+                    });
+
+                    console.log(place)
+                    console.log(place.geometry)
+
+                    let addressDescription =
+                        '<div style="align-content: center; align-items: center; text-align: center;" id="content">' +
+                        '<h5 class="formattedAddress">' + place.formatted_address + '</h5>' +
+                        '<div id="bodyContent">' +
+                        "<button style='font-size: 0.8em; margin-bottom: 5px;' class='btn btn-primary' type='button' onclick='populateAddressFields(this)'>Pick address</button>" +
+                        "</div>" + "</div>";
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: addressDescription,
+                    });
+
+                    (function (m, infoWindow) {
+                        google.maps.event.addListener(m, 'click', function (evt) {
+                            infoWindow.setContent(addressDescription);
+                            infoWindow.open(map, m);
+
+                        })
+                    })(marker, infoWindow);
+
+                    console.log(place);
+
+                    markers.push(marker);
+
+                    if (place.geometry.viewport) {
+                        bounds.union(place.geometry.viewport);
+                    } else {
+                        bounds.extend(place.geometry.location);
+                    }
+                });
+                map.fitBounds(bounds);
+            });
+        }
+
+        function showCollectiveMapModal(element) {
+            $('#allEmployeesDialog').modal('show');
+
+            var map = new google.maps.Map(document.getElementById('employees-map'), {
+                zoom: 2,
+                center: {lat: 50.5039, lng: 4.4699}
+            });
+
+            const legend = getEmployeesLegend();
+            map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
+
+            $.getJSON('http://localhost:8080/api/employees',
+                function (employees) {
+                    if (employees.length > 0) {
+                        var markers = [];
+                        for (var i = 0; i < employees.length; i++) {
+                            var latLng =
+                                new google.maps.LatLng(employees[i].geoLocation.latitude, employees[i].geoLocation.longitude);
+
+                            let fillColor = getFillColorByRole(employees[i].role);
+                            let strokeColor = getStrokeColorByJobPosition(employees[i].jobPosition);
+
+                            const marker = new google.maps.Marker({
+                                position: latLng,
+                                icon: getDefaultSvgMarker(fillColor, strokeColor)
+                            });
+
+                            let employeeDescription = getEmployeeDescription(employees[i].fullName, employees[i].role, employees[i].jobPosition, employees[i].fullAddress);
+
+                            const infoWindow = new google.maps.InfoWindow({
+                                content: employeeDescription,
+                            });
+
+                            (function (m, infoWindow, idx) {
+                                google.maps.event.addListener(m, 'click', function (evt) {
+                                    infoWindow.setContent(employeeDescription);
+                                    infoWindow.open(map, m);
+                                })
+                            })(marker, infoWindow, i);
+
+                            markers.push(marker);
+                        }
+                        var markerCluster = new MarkerClusterer(map, markers, {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
+                    }
+                });
+
+        }
+
+        function showIndividualMapModal(element) {
             $('#mapDialog').modal('show');
             let fullName = $(element).data("fullname");
             let role = $(element).data("role");
@@ -43,37 +208,13 @@
                 center: {lat: 50.5039, lng: 4.4699}
             });
 
-            const legend = document.createElement("div");
-            legend.id = "legend";
-            legend.style.cssText = "border-radius: 2px; background: white; padding: 3px; margin: 10px; box-shadow: rgb(0 0 0 / 30%) 0px 1px 4px -1px; diplay:none";
-            var div = document.createElement("div");
-            div.style.cssText = 'display: flex; align-content: center; align-items: center; padding: 10px;'
-            div.innerHTML = '<svg height="22" width="26"> <path style="fill: ' + colors.userColor + ';" d="' + svgMarkerPath + '" /></svg><p> User</p>';
-            legend.appendChild(div);
-            div = document.createElement("div");
-            div.style.cssText = 'display: flex; align-content: center; align-items: center; padding: 10px;'
-            div.innerHTML = '<svg height="22" width="26"> <path style="fill: ' + colors.adminColor + ';" d="' + svgMarkerPath + '" /></svg><p> Admin</p>';
-            legend.appendChild(div);
-            div = document.createElement("div");
-            div.style.cssText = 'display: flex; align-content: center; align-items: center; padding: 10px;'
-            div.innerHTML = '' +
-                '<div style="overflow:hidden; overflow-y:scroll; height:70px; width:100%; list-style-type:none">' +
-                '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorSenior + ';" /></svg><p style="margin: 0"> SENIOR</p></div>' +
-                '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorMedior + '" /></svg><p style="margin: 0"> MEDIOR</p></div>' +
-                '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorJunior + '" /></svg><p style="margin: 0"> JUNIOR</p></div>' +
-                '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorAdmin + '" /></svg><p style="margin: 0"> HR</p></div>' +
-                '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorRecruiter + '" /></svg><p style="margin: 0"> RECRUITER</p></div>' +
-                '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorNone + '" /></svg><p style="margin: 0"> NONE</p></div>' +
-                '</div>';
-            legend.appendChild(div);
-
+            const legend = getEmployeesLegend();
             map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
 
             if (longitude !== 0.0 && latitude !== 0.0) {
                 var markers = [];
                 var latLng = new google.maps.LatLng(latitude, longitude);
                 map.setCenter(new google.maps.LatLng(latitude, longitude));
-
 
                 let fillColor = getFillColorByRole(role);
                 let strokeColor = getStrokeColorByJobPosition(position);
@@ -83,14 +224,7 @@
                     icon: getDefaultSvgMarker(fillColor, strokeColor)
                 });
 
-                let employeeDescription =
-                    '<div style="align-content: center; align-items: center; text-align: center;" id="content">' +
-                    '<h4>' + fullName + '</h4>' +
-                    '<div id="bodyContent">' +
-                    '<p><span style="padding: 3px; border-radius: 3px; font-size: 11.844px; font-weight: bold; line-height: 14px; color: #ffffff; text-shadow: 0 -1px 0 rgb(0 0 0 / 25%); white-space: nowrap; vertical-align: baseline;background-color: '+ getFillColorByRole(role) +'">' + role + '</span> ' +
-                    '/ <span style="padding: 3px; border-radius: 3px; font-size: 11.844px; font-weight: bold; line-height: 14px; color: #ffffff; text-shadow: 0 -1px 0 rgb(0 0 0 / 25%); white-space: nowrap; vertical-align: baseline;background-color: '+ getStrokeColorByJobPosition(position) +'">' + position + "</span></p>" +
-                    "<p>" + address + "</p>" +
-                    "</div>" + "</div>";
+                let employeeDescription = getEmployeeDescription(fullName, role, position, address);
 
                 const infoWindow = new google.maps.InfoWindow({
                     content: employeeDescription,
@@ -132,18 +266,9 @@
                         <li class="nav-item">
                             <a class="nav-link" th:href="@{/}">[employees]</a>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
-                               id="navbarDropdown" role="button">
-                                Options
-                            </a>
-                            <ul aria-labelledby="navbarDropdown" class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Create</a></li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li><a class="dropdown-item" href="#">Something else here</a></li>
-                            </ul>
+                        <li>
+                            <button class="btn btn-primary" onclick="initCreateEmployeeMap(this)">Add employee
+                            </button>
                         </li>
                         <li class="nav-item">
                             <a aria-disabled="true" class="nav-link disabled" href="#" tabindex="-1">Disabled</a>
@@ -158,7 +283,8 @@
         </nav>
     </div>
     <div class="card" style="margin-bottom: 15px;">
-        <button class="btn btn-success" data-bs-target="#allEmployeesDialog" data-bs-toggle="modal" type="button">
+        <button class="btn btn-success" data-bs-target="#allEmployeesDialog" data-bs-toggle="modal"
+                onclick="showCollectiveMapModal(this)" type="button">
             <svg class="bi bi-map" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
                  xmlns="http://www.w3.org/2000/svg">
                 <path d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.502.502 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103zM10 1.91l-4-.8v12.98l4 .8V1.91zm1 12.98 4-.8V1.11l-4 .8v12.98zm-6-.8V1.11l-4 .8v12.98l4-.8z"
@@ -179,21 +305,22 @@
         <div class="col" th:each="employee : ${employees}">
             <div class="card">
                 <blockquote class="blockquote mb-0 card-body">
-                    <h5 class="card-title"><span th:text="${employee.username} + ' '"></span><span class="badge text-dark jobPositionBadge"
-                                                                                                   id="jobPositionBadge"
-                                                                                                   th:text="${employee.jobPosition}">Warning</span>
+                    <h5 class="card-title"><span th:text="${employee.username} + ' '"></span><span
+                            class="badge text-dark jobPositionBadge"
+                            id="jobPositionBadge"
+                            th:text="${employee.jobPosition}">Warning</span>
                     </h5>
                     <p class="card-text" th:text="${employee.firstName + ' ' + employee.lastName}"></p>
                     <footer class="blockquote-footer">
                         <small class="text-muted" th:text="${employee.email}"></small>
                     </footer>
-                    <button class="btn btn-success" onclick="showMapModal(this)"
+                    <button class="btn btn-success" onclick="showIndividualMapModal(this)"
                             th:data-address="${employee.address}"
                             th:data-fullname="${employee.fullName}"
-                            th:data-role="${employee.role}"
-                            th:data-position="${employee.jobPosition}"
                             th:data-latitude="${employee.geoLocation == null ? 0.0 : employee.geoLocation.latitude}"
                             th:data-longitude="${employee.geoLocation == null ? 0.0 : employee.geoLocation.longitude}"
+                            th:data-position="${employee.jobPosition}"
+                            th:data-role="${employee.role}"
                             type="button"><i
                             class="fas fa-map-marker-alt"></i> <span
                             th:text="${employee.address.street + ', ' + employee.address.city + ', ' + employee.address.country}"></span>
@@ -205,10 +332,10 @@
 </div>
 
 <div aria-hidden="true" aria-labelledby="mapDialog" class="modal fade" id="mapDialog" tabindex="-1">
-    <div class="modal-dialog" style="max-width: 700px;">
+    <div class="modal-dialog" style="max-width: 1000px;">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="mapDialogTitle">Modal title</h5>
+                <h5 class="modal-title" id="mapDialogTitle">View employee</h5>
                 <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
             </div>
             <div class="modal-body">
@@ -221,17 +348,16 @@
     </div>
 </div>
 
-<!-- Modal -->
 <div aria-hidden="true" aria-labelledby="allEmployeesDialogLabel" class="modal fade" id="allEmployeesDialog"
      tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog" style="max-width: 1000px;">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="allEmployeesDialogLabel">Modal title</h5>
+                <h5 class="modal-title" id="allEmployeesDialogLabel">View all employees</h5>
                 <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
             </div>
             <div class="modal-body">
-                ...
+                <div id="employees-map" style="width:100%; height: 550px; margin-bottom: 30px;"></div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
@@ -240,6 +366,101 @@
         </div>
     </div>
 </div>
+
+<div aria-hidden="true" aria-labelledby="createEmployeeDialogLabel" class="modal fade" id="createEmployeeDialog"
+     tabindex="-1">
+    <div class="modal-dialog" style="max-width: 1000px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createEmployeeDialogLabel">Create employee</h5>
+                <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+            </div>
+            <div class="modal-body">
+                <form action="#" class="row g-3" id="createEmployeeForm" method="post"
+                      th:action="@{/}" th:object="${createEmployeeForm}">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">
+                                <div class="row" style="margin-bottom:20px;">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="employeeUsername">Username</label>
+                                        <input class="form-control" id="employeeUsername" th:field="*{username}"
+                                               type="text">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="employeeEmail">Email</label>
+                                        <input class="form-control" id="employeeEmail" th:field="*{email}" type="text">
+                                    </div>
+                                </div>
+
+                                <div class="row" style="margin-bottom:20px;">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="employeeFirstName">First Name</label>
+                                        <input class="form-control" id="employeeFirstName" th:field="*{firstName}"
+                                               type="text">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="employeeLastName">Last Name</label>
+                                        <input class="form-control" id="employeeLastName" th:field="*{lastName}"
+                                               type="text">
+                                    </div>
+                                </div>
+
+                                <div class="row" style="margin-bottom:20px;">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="employeePosition">Position</label>
+                                        <select class="form-select" id="employeePosition" th:field="*{jobPosition}">
+                                            <div th:each="jp : ${jobPositions}">
+                                                <option th:text="${jp}" th:value="${jp}"></option>
+                                            </div>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="employeeRole">Role</label>
+                                        <select class="form-select" id="employeeRole" th:field="*{role}">
+                                            <div th:each="r : ${roles}">
+                                                <option th:text="${r}" th:value="${r}"></option>
+                                            </div>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="margin-bottom:20px;">
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="employeeAddressStreet">Street</label>
+                                        <input class="form-control" id="employeeAddressStreet" th:field="*{street}"
+                                               type="text">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="employeeAddressCity">City</label>
+                                        <input class="form-control" id="employeeAddressCity" th:field="*{city}"
+                                               type="text">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="employeeAddressCountry">Country</label>
+                                        <input class="form-control" id="employeeAddressCountry" th:field="*{country}"
+                                               type="text">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div id="create-employee-map"
+                                     style="width:100%; height: 550px; margin-bottom: 30px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
+                <button class="btn btn-primary" id="createEmployeeButton" onclick="submitForm(this)" type="submit">Save
+                    changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 </body>
 </html>

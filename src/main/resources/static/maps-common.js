@@ -29,6 +29,44 @@ function getDefaultSvgMarker(fillColor, strokeColor){
     };
 }
 
+function getEmployeesLegend(){
+    var legend = document.createElement("div");
+    legend.id = "legend";
+    legend.style.cssText = "border-radius: 2px; background: white; padding: 3px; margin: 10px; box-shadow: rgb(0 0 0 / 30%) 0px 1px 4px -1px; diplay:none";
+    var div = document.createElement("div");
+    div.style.cssText = 'display: flex; align-content: center; align-items: center; padding: 10px;'
+    div.innerHTML = '<svg height="22" width="26"> <path style="fill: ' + colors.userColor + ';" d="' + svgMarkerPath + '" /></svg><p> User</p>';
+    legend.appendChild(div);
+    div = document.createElement("div");
+    div.style.cssText = 'display: flex; align-content: center; align-items: center; padding: 10px;'
+    div.innerHTML = '<svg height="22" width="26"> <path style="fill: ' + colors.adminColor + ';" d="' + svgMarkerPath + '" /></svg><p> Admin</p>';
+    legend.appendChild(div);
+    div = document.createElement("div");
+    div.style.cssText = 'display: flex; align-content: center; align-items: center; padding: 10px;'
+    div.innerHTML = '' +
+        '<div style="height:90px; width:100%; list-style-type:none">' +
+        '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorSenior + ';" /></svg><p style="margin: 0"> SENIOR</p></div>' +
+        '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorMedior + '" /></svg><p style="margin: 0"> MEDIOR</p></div>' +
+        '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorJunior + '" /></svg><p style="margin: 0"> JUNIOR</p></div>' +
+        '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorAdmin + '" /></svg><p style="margin: 0"> HR</p></div>' +
+        '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorRecruiter + '" /></svg><p style="margin: 0"> RECRUITER</p></div>' +
+        '<div style="display: flex"><svg style="margin-top: 3px; margin-right: 5px;" height="5" width="20"><rect width="20" height="5" style="fill:' + colors.colorNone + '" /></svg><p style="margin: 0"> NONE</p></div>' +
+        '</div>';
+    legend.appendChild(div)
+    return legend;
+}
+
+function getEmployeeDescription(fullName, role, position, address) {
+    return '<div style="align-content: center; align-items: center; text-align: center;" id="content">' +
+        '<h4>' + fullName + '</h4>' +
+        '<div id="bodyContent">' +
+        '<p><span style="padding: 3px; border-radius: 3px; font-size: 11.844px; font-weight: bold; line-height: 14px; color: #ffffff; text-shadow: 0 -1px 0 rgb(0 0 0 / 25%); white-space: nowrap; vertical-align: baseline;background-color: ' + getFillColorByRole(role) + '">' + role + '</span> ' +
+        '/ <span style="padding: 3px; border-radius: 3px; font-size: 11.844px; font-weight: bold; line-height: 14px; color: #ffffff; text-shadow: 0 -1px 0 rgb(0 0 0 / 25%); white-space: nowrap; vertical-align: baseline;background-color: ' + getStrokeColorByJobPosition(position) + '">' + position + "</span></p>" +
+        "<p>" + address + "</p>" +
+        "</div>" + "</div>";
+}
+
+
 function getFillColorByRole(role){
     var fillColor = colors.userColor;
     switch (role) {

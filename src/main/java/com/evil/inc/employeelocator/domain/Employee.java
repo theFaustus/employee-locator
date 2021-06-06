@@ -1,5 +1,6 @@
 package com.evil.inc.employeelocator.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "employees")
 public class Employee extends AbstractEntity {
@@ -38,6 +40,17 @@ public class Employee extends AbstractEntity {
 
     private boolean geoProcessed = false;
 
+    public Employee(final String firstName, final String lastName, final String username, final String email,
+                    final Address address, final Role role, final JobPosition jobPosition) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.username = username;
+        this.email = email;
+        this.address = address;
+        this.role = role;
+        this.jobPosition = jobPosition;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -49,6 +62,14 @@ public class Employee extends AbstractEntity {
 
     public String getFullName() {
         return firstName + ", " + lastName;
+    }
+
+    public String getFullAddress() {
+        return this.address.toString();
+    }
+
+    public void setAddress(final Address address) {
+        this.address = address;
     }
 
     @Override
