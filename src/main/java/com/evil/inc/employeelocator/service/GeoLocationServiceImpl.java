@@ -66,5 +66,4 @@ public class GeoLocationServiceImpl implements GeoLocationService {
 
         return Optional.empty();
     }
-
 }
